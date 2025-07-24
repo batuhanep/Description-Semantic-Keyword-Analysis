@@ -7,13 +7,13 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
 from nltk.corpus import stopwords
 
-# NLTK veri indir
+
 nltk.download("stopwords")
 
-# MODELLER
+# model
 model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
 
-# STOPWORDS
+# stopwords
 stop_words = set(stopwords.words("english"))
 turkish_stopwords = {
     "ve", "ile", "için", "ama", "fakat", "çünkü", "veya", "bir", "bu", "şu", "daha", "gibi", "olan",
@@ -26,7 +26,7 @@ extra_english_stopwords = {
 }
 all_stopwords = stop_words.union(turkish_stopwords).union(extra_english_stopwords)
 
-# FİİL EKLERİ
+# ing,yüklem
 turkish_verb_suffixes = ["mek", "mak", "yor", "acak", "ecek", "miş", "mış", "muş", "müş"]
 english_verb_suffixes = ["ing", "ed", "ize", "ise", "s", "es", "d", "ly"]
 verb_suffixes = turkish_verb_suffixes + english_verb_suffixes
@@ -34,7 +34,7 @@ verb_suffixes = turkish_verb_suffixes + english_verb_suffixes
 def is_verb(word):
     return any(word.lower().endswith(suffix) for suffix in verb_suffixes)
 
-# Basit normalize işlemi: lowercase + son ekleri at
+# normalize
 def normalize_word(word):
     word = word.lower()
     for suffix in verb_suffixes:
@@ -43,7 +43,7 @@ def normalize_word(word):
             break
     return word
 
-# HİBRİT ANAHTAR KELİME SEÇİMİ
+# hybrid keyword 
 def extract_hybrid_keywords(title, desc, top_n=5):
     desc_clean = re.sub(r"[^\w\s]", " ", desc)
     words = desc_clean.split()
@@ -54,7 +54,7 @@ def extract_hybrid_keywords(title, desc, top_n=5):
     if not unique_words:
         return ""
 
-    # TF-IDF similarity
+    # TF-IDF 
     tfidf_vectorizer = TfidfVectorizer().fit([title] + unique_words)
     tfidf_vectors = tfidf_vectorizer.transform([title] + unique_words)
     tfidf_similarities = cosine_similarity(tfidf_vectors[0:1], tfidf_vectors[1:]).flatten()
@@ -64,16 +64,16 @@ def extract_hybrid_keywords(title, desc, top_n=5):
     title_embedding = model.encode(title, convert_to_tensor=True)
     embedding_similarities = torch.nn.functional.cosine_similarity(title_embedding, word_embeddings).cpu().tolist()
 
-    # Hibrit skor
+    # hybrid score
     hybrid_scores = [
         0.5 * tfidf + 0.5 * embed
         for tfidf, embed in zip(tfidf_similarities, embedding_similarities)
     ]
 
-    # En yüksek skora sahip kelimeleri sırala
+    # best words 
     top_indices = sorted(range(len(hybrid_scores)), key=lambda i: hybrid_scores[i], reverse=True)
 
-    # Normalize edilmiş köklere göre tekrarları filtrele
+    # filtering normalized words
     seen_roots = set()
     final_words = []
     for i in top_indices:
@@ -87,10 +87,10 @@ def extract_hybrid_keywords(title, desc, top_n=5):
 
     return " | ".join(final_words)
 
-# EXCEL OKU
-df = pd.read_excel("dsdsd.xlsx")  # kendi dosya adını gir
+
+df = pd.read_excel("dsdsd.xlsx") 
 df["hybrid_keywords"] = df.apply(lambda row: extract_hybrid_keywords(row["Title"], row["desc"]), axis=1)
 
-# KAYDET
+
 df.to_excel("dsds.xlsx", index=False)
 print("Bitti. Dosya: dsds.xlsx")
