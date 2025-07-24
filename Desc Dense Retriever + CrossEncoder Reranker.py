@@ -6,17 +6,13 @@ from nltk.corpus import stopwords
 from sentence_transformers import SentenceTransformer, CrossEncoder
 from TurkishStemmer import TurkishStemmer
 
-# NLTK veri indir
 nltk.download("stopwords")
 
-# MODELLER
 dense_model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
 rerank_model = CrossEncoder("cross-encoder/stsb-roberta-base")
 
-# TurkishStemmer
 stemmer = TurkishStemmer()
 
-# STOPWORDS
 stop_words = set(stopwords.words("english"))
 turkish_stopwords = {
     "ve", "ile", "için", "bir", "bu", "şu", "da", "de", "gibi", "olan", "ama", "veya",
@@ -29,17 +25,14 @@ extra_english_stopwords = {
 }
 all_stopwords = stop_words.union(turkish_stopwords).union(extra_english_stopwords)
 
-# Fiil ekleri
 verb_suffixes = ["mek", "mak", "yor", "acak", "ecek", "miş", "mış", "muş", "müş", "ing", "ed", "ize", "ise", "ly", "s", "es", "d", "en"]
 
 def is_verb(word):
     return any(word.lower().endswith(suffix) for suffix in verb_suffixes)
 
-# TurkishStemmer ile normalize
 def normalize_word(word):
     return stemmer.stem(word.lower())
 
-# Anahtar kelime çıkarımı (dense + rerank)
 def rerank_dense_keywords(title, desc, top_n=5, preselect=20):
     desc_clean = re.sub(r"[^\w\s]", " ", str(desc))
     words = desc_clean.split()
@@ -50,7 +43,6 @@ def rerank_dense_keywords(title, desc, top_n=5, preselect=20):
     if not unique_words:
         return ""
 
-    # Step 1: Dense similarity
     word_embeds = dense_model.encode(unique_words, convert_to_tensor=True)
     title_embed = dense_model.encode(title, convert_to_tensor=True)
     sims = torch.nn.functional.cosine_similarity(title_embed, word_embeds).cpu().tolist()
@@ -58,7 +50,6 @@ def rerank_dense_keywords(title, desc, top_n=5, preselect=20):
     top_dense_indices = sorted(range(len(sims)), key=lambda i: sims[i], reverse=True)[:preselect]
     dense_candidates = [unique_words[i] for i in top_dense_indices]
 
-    # Step 2: Rerank with CrossEncoder
     pairs = [(title, word) for word in dense_candidates]
     scores = rerank_model.predict(pairs)
     sorted_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
@@ -76,7 +67,6 @@ def rerank_dense_keywords(title, desc, top_n=5, preselect=20):
 
     return " | ".join(final_words)
 
-# EXCEL oku ve işle
 df = pd.read_excel("desc1.xlsx")
 results = []
 total = len(df)
@@ -88,7 +78,6 @@ for idx, row in df.iterrows():
     results.append(keywords)
     print(f"%{int((idx + 1) / total * 100)} tamamlandı... ({idx + 1}/{total})")
 
-# Sonuçları yaz
 df["reranked_keywords"] = results
 df.to_excel("desc1_rerankeddsds_keywords.xlsx", index=False)
 print("✅ Bitti! Çıktı: desc1_reranked_kdsdseywords.xlsx")
