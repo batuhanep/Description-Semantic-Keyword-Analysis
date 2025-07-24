@@ -5,13 +5,10 @@ from sentence_transformers import CrossEncoder
 from nltk.corpus import stopwords
 import nltk
 
-# NLTK veri indir
 nltk.download("stopwords")
 
-# MODEL yükle
 model = CrossEncoder("cross-encoder/stsb-roberta-base")
 
-# STOPWORDS + EKLER
 stop_words = set(stopwords.words("english"))
 turkish_stopwords = {
     "ve", "ile", "için", "bir", "bu", "şu", "da", "de", "gibi", "olan", "ama", "veya",
@@ -24,7 +21,6 @@ extra_english_stopwords = {
 }
 all_stopwords = stop_words.union(turkish_stopwords).union(extra_english_stopwords)
 
-# Fiil ekleri
 turkish_verb_suffixes = ["mek", "mak", "yor", "acak", "ecek", "miş", "mış", "muş", "müş"]
 english_verb_suffixes = ["ing", "ed", "ize", "ise", "ly", "s", "es", "d", "en"]
 verb_suffixes = turkish_verb_suffixes + english_verb_suffixes
@@ -40,7 +36,6 @@ def normalize_word(word):
             break
     return word
 
-# CrossEncoder ile anahtar kelime çıkarımı
 def sbert_crossencoder_keywords(title, desc, top_n=5):
     desc_clean = re.sub(r"[^\w\s]", " ", str(desc))
     words = desc_clean.split()
@@ -70,10 +65,8 @@ def sbert_crossencoder_keywords(title, desc, top_n=5):
 
     return " | ".join(final_words)
 
-# Excel dosyasını oku
-df = pd.read_excel("desc1.xlsx")  # Girdi dosyan buraya
+df = pd.read_excel("desc1.xlsx")
 
-# Anahtar kelimeleri sırayla üret ve ilerleme göster
 results = []
 total = len(df)
 
@@ -83,11 +76,9 @@ for idx, row in df.iterrows():
     keywords = sbert_crossencoder_keywords(title, desc)
     results.append(keywords)
 
-    # Yüzde hesapla ve yazdır
     percent = int((idx + 1) / total * 100)
     print(f"%{percent} tamamlandı... ({idx + 1}/{total})")
 
-# Sonuçları ekle ve kaydet
 df["crossencoder_keywords"] = results
 df.to_excel("sdsd.xlsx", index=False)
 print("✅ Bitti! Çıktı: dsdsd.xlsx")
