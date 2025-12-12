@@ -93,14 +93,10 @@ def extract_hybrid_keywords(title, desc, top_n=5):
     random.shuffle(final_words)
     return " | ".join(final_words)
 
-# EXCEL OKU
 df = pd.read_excel("/Users/batuhanozdemir/Desktop/datasicence-ops-software/Datascience/desci.xlsx")  # kendi dosya adını gir
-# !!! YENİ KISIM: NaN değerleri temizle (BOŞ METİN ile doldur) !!!
 df['Title'] = df['Title'].fillna('')
 df['desc'] = df['desc'].fillna('')
-# !!! YENİ KISIM BİTTİ !!!
 df["hybrid_keywords"] = df.apply(lambda row: extract_hybrid_keywords(row["Title"], row["desc"]), axis=1)
 
-# KAYDET
 df.to_excel("descbm25.xlsx", index=False)
 print("Bitti. Dosya: dsds.xlsx")
